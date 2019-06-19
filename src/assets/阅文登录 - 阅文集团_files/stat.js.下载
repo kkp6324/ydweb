@@ -1,0 +1,109 @@
+var Stat = {
+    pageIds: {
+        'qidian_login': 'mqd_P_qdlogin',
+        'qq_login': 'mqd_P_QQlogin',
+        'qidian_reg': 'mqd_P_qdreg',
+        'qq_reg': 'mqd_P_QQreg'
+    },
+    pageTitles: {
+        'qidian_login': '起点登录界面_M站',
+        'qq_login': 'QQ阅读登录界面_M站',
+        'qidian_reg': '起点注册界面_M站',
+        'qq_reg': 'QQ阅读注册界面_M站'
+    },
+    pageId: '',
+    pageTitle: '',
+    appId: 10,
+    areaId: 1,
+    init: function() {
+        var pathname = document.location.pathname || 'login';
+        if (pathname.indexOf('reg.html') > -1 || pathname.indexOf('phonelogin.html') > -1) {
+            pathname = 'reg';
+            try { 
+                Stat.appId = Register.config.appId; 
+                Stat.areaId = Register.config.areaId; 
+            } catch (e) {};
+        } else {
+            pathname = 'login';
+            try { 
+                Stat.appId = LoginV1.config.appId; 
+                Stat.areaId = LoginV1.config.areaId; 
+            } catch (e) {};
+        }
+
+        var host = document.location.host;
+        var pageId = '';
+        if (host.indexOf('qidian.com') > -1) {
+            pageId = 'qidian_' + pathname;
+        } else {
+            pageId = 'qq_' + pathname;
+        }
+        Stat.pageId = Stat.pageIds[pageId] || Stat.pageIds.qidian_login;
+        Stat.pageTitle = Stat.pageTitles[pageId] || Stat.pageTitles.qidian_login;
+        
+        Report.init({
+            pid: Stat.pageId,
+            title: Stat.pageTitle,
+            appid: Stat.appId,
+            areaid: Stat.areaId,
+            path: 'commonaccess',
+            host: document.location.host
+        });
+
+        if (Stat.appId != 1450000221) {
+            var _mtac = {"performanceMonitor":1};
+            var mta = document.createElement("script");
+            mta.src = "//pingjs.qq.com/h5/stats.js?v2.0.2";
+            mta.setAttribute("name", "MTAH5");
+            mta.setAttribute("sid", "500376155");
+            mta.setAttribute("cid", "500376159");
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(mta, s);
+        }
+        
+        $('.stat').on('click', function(e) {
+            var dataReport = $(this).attr('data-report');
+            if (dataReport == 0) return;
+            
+            var offData = $(this).attr('data-off-stat');
+            var data = $(this).attr('data-stat');
+            if (data == undefined || data == '' || data == null) { // 如果没有统计value，则不发送统计
+                return;
+            }
+            e = e || event;
+            var x = e.clientX;
+            var y = e.clientY;
+            if (offData != undefined && offData != '' && offData != null) {
+                // check 检查选中状态
+                var check = $(this).is(":checked") ? 0 : 1; // 此处获取的还是之前的状态
+                if (check == 0) data = offData;
+            }
+            
+            data = data.split('|');
+            
+            var eid = data[0] || 0;
+            var params = {};
+            params['appid'] = Stat.appId;
+            params['areaid'] = Stat.areaId;
+            params['x'] = x;
+            params['y'] = y;
+            params[eid] = 'true';
+            
+            if (Stat.appId != 1450000221) {
+                MtaH5.clickStat(Stat.pageId + '_' + data[0], params);
+            }
+            
+            Report.send(e, {
+                pid: Stat.pageId,
+                title: data[1] || '',
+                eid: data[2] || '',
+                appid: Stat.appId,
+                areaid: Stat.areaId,
+                x: x,
+                y: y,
+                l1: data[3] || '',
+                path: 'commonaccess'
+            }, $(this));
+        });
+    }
+};
